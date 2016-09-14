@@ -13,6 +13,8 @@ class SwerveDrive:
         self.module_speeds = [0,0,0,0]
         self.module_angles = [0,0,0,0]
         
+        self.module_weight_multipliers = [1,1,1,1]
+        
         self.navx = navx
         
         self.field_centric = field_centric
@@ -37,6 +39,43 @@ class SwerveDrive:
         self.width = width
 
         self.r = math.sqrt((self.length * self.length)+(self.width + self.width))
+        
+    def set_weight_distribution(self, rr_weight = 1, rl_weight = 1, fr_weight = 1, fl_weight = 1):
+        '''
+        This method is used to put the given weights into an array and pass it to the other method.
+        It uses defaults to prevent someone who doesnt understand the method by calling it on accident
+        '''
+        
+        self._set_weight_distribution([rr_weight, rl_weight, fr_weight, fl_weight])
+        
+    def _set_weight_distribution(self, weight_distribution):
+        '''
+        This method is used to set the weight distribution of the robot's chassis.
+        The values should be sent as [rr_weight, rl_weight, fr_weight, fl_weight].
+        
+        The array is a ratio. You can measure the force applied through each wheel on a scale
+        and input the numbers. Or guestimate 
+        
+        For example a chassis is about 4 pounds on the right side but the battery on the left side
+        increases the left side's weight to around 5 pounds. I could input: [4, 5, 4, 5] directly in.
+        '''
+        
+        base_weight = -1
+        base_weight_place = None
+        
+        for i, weight in enumerate(weight_distribution):
+            if weight <= 0:
+                raise "Weight less than or equal to 0"
+            
+            if base_weight < weight:
+                base_weight = weight
+                base_weight_place = i
+                
+        self.module_weight_multipliers[base_weight_place] = 1
+        
+        for i, weight in enumerate(weight_distribution):
+            if i == base_weight_place:
+                self.module_weight_multipliers[i] = weight/base_weight
 
     def set_allow_reverse(self, value):
         self.allow_reverse = value
@@ -108,6 +147,10 @@ class SwerveDrive:
         #Assigns the speeds and angles in lists. MUST BE IN THIS ORDER
         requested_module_speeds = [fr_speed, fl_speed, rl_speed, rr_speed]
         requested_module_angles = [fr_angle, fl_angle, rl_angle, rr_angle]
+        
+        #Compensates for unbalanced chassis
+        for i, speed in enumerate(requested_module_speeds):
+            requested_module_speeds[i] = requested_module_speeds[i] * self.module_weight_multipliers[i]
 
         #Finds the current max speed
         max_speed = 0
@@ -115,7 +158,7 @@ class SwerveDrive:
             if speed > max_speed:
                 max_speed = speed
         
-        #Normalises values if any speed is greater then the max   
+        #Normalizes values if any speed is greater then the max   
         if max_speed > self.max_drive_speed.value:
             precent_over = (max_speed-self.max_drive_speed.value)/max_speed
             precent_held = 1-precent_over

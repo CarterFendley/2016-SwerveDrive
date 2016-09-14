@@ -28,6 +28,7 @@ class MyRobot(wpilib.SampleRobot):
 
         #Initalization of the SwerveDrive class that will handle movement calulations
         self.drive = SwerveDrive(self.rr_module, self.rl_module, self.fr_module, self.fl_module, self.navX)
+        self.drive.set_weight_distribution(rr_weight=1.3, rl_weight=1, fr_weight=1.3, fl_weight = 1)
         
         #Operation Buttons
         self.field_centric_button = ButtonDebouncer(self.joystick1, 6)
