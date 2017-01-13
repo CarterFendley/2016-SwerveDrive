@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import wpilib
+import ctre
 from networktables import NetworkTable
 
 from components.swervemodule import SwerveModule
@@ -21,9 +22,11 @@ class MyRobot(wpilib.SampleRobot):
 
         self.joystick1 = wpilib.Joystick(0)
         self.joystick2 = wpilib.Joystick(1)
+        
+        self.talon = ctre.CANTalon(5)
 
         #Initalization of each indvidual wheel module FORMAT:(driveMotor, rotateMotor, encoderPort, Prefix for SmartDash vars, inverted)
-        self.rr_module = SwerveModule(wpilib.VictorSP(2),wpilib.VictorSP(3),3, SDPrefix="RR Module", zero=3.25, inverted=True)
+        self.rr_module = SwerveModule(self.talon, wpilib.VictorSP(2),3, SDPrefix="RR Module", zero=3.25, inverted=True)
         self.rl_module = SwerveModule(wpilib.VictorSP(7),wpilib.VictorSP(6),1, SDPrefix="RL Module", zero=2.18, inverted=True)
         self.fl_module = SwerveModule(wpilib.VictorSP(4),wpilib.VictorSP(5),0, SDPrefix="FL Module", zero=3.19, inverted=True)
         self.fr_module = SwerveModule(wpilib.VictorSP(1),wpilib.VictorSP(0),2, SDPrefix="FR Module", zero=2.15, inverted=True)
@@ -51,6 +54,8 @@ class MyRobot(wpilib.SampleRobot):
     def operatorControl(self):
         while self.isOperatorControl() and self.isEnabled():
 
+            self.sd.putBoolean("Fwd Limit Switch", self.talon.isFwdLimitSwitchClosed())
+            self.sd.putBoolean("Rev Limit Switch", self.talon.isRevLimitSwitchClosed())
             #Passing joystick axis values to drive function
             self.drive.move(self.joystick1.getAxis(1)*-1, self.joystick1.getAxis(0)*-1, self.joystick2.getAxis(0)*-1)
 
